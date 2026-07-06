@@ -19,6 +19,7 @@ class _TodayScreenState extends State<TodayScreen> {
   int _navIndex = 0;
   List<Task> _tasks = [];
   bool _loading = true;
+  String? _error;
   int _streak = 0;
 
   @override
@@ -28,14 +29,25 @@ class _TodayScreenState extends State<TodayScreen> {
   }
 
   Future<void> _loadAll() async {
-    final db = DatabaseHelper();
-    final todayStr = _todayDateString;
-    final tasks = await db.getTasks(date: todayStr);
-    final streak = await db.getStreak();
-    if (mounted) {
-      setState(() {
-        _tasks = tasks;
-        _streak = streak;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final db = DatabaseHelper();
+      final todayStr = _todayDateString;
+      final tasks = await db.getTasks(date: todayStr);
+      final streak = await db.getStreak();
+      if (mounted) {
+        setState(() {
+          _tasks = tasks;
+          _streak = streak;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() {
+        _error = 'Could not load your schedule.';
         _loading = false;
       });
     }
@@ -46,13 +58,13 @@ class _TodayScreenState extends State<TodayScreen> {
     setState(() => _navIndex = index);
     switch (index) {
       case 1:
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const FocusScreen()));
+        Navigator.push(context, fadeSlideRoute(const FocusScreen()));
         break;
       case 2:
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const WindDownScreen()));
+        Navigator.push(context, fadeSlideRoute(const WindDownScreen()));
         break;
       case 3:
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const ProgressScreen()));
+        Navigator.push(context, fadeSlideRoute(const ProgressScreen()));
         break;
     }
   }
@@ -166,22 +178,14 @@ class _TodayScreenState extends State<TodayScreen> {
                           const SizedBox(height: 10),
 
                           if (_loading)
-                            const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(24),
-                                child: CircularProgressIndicator(color: AppColors.accent),
-                              ),
-                            )
+                            const LoadingIndicator()
+                          else if (_error != null)
+                            ErrorBanner(message: _error!, onRetry: _loadAll)
                           else if (_tasks.isEmpty)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 24),
-                              child: Center(
-                                child: Column(
-                                  children: [
-                                    Text('No tasks yet. Tap + to add one!', style: AppTextStyles.body(size: 12, color: AppColors.textSecondary)),
-                                  ],
-                                ),
-                              ),
+                            const EmptyState(
+                              emoji: '📋',
+                              title: 'No tasks yet',
+                              subtitle: 'Tap the + button to add your first task for today.',
                             )
                           else
                             ..._tasks.map((task) => TaskCard(

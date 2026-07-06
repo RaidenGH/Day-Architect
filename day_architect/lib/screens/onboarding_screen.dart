@@ -65,7 +65,7 @@ class OnboardingScreen extends StatelessWidget {
                   label: "Get Started — it's free",
                   onTap: () {
                     Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (_) => const TodayScreen()),
+                      fadeSlideRoute(const TodayScreen()),
                     );
                   },
                 ),

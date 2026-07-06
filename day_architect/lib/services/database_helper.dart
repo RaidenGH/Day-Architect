@@ -23,7 +23,7 @@ class DatabaseHelper {
     final path = join(dbPath, 'day_architect.db');
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -36,6 +36,15 @@ class DatabaseHelper {
       // Backfill existing rows with today's date
       final todayStr = formatDate(DateTime.now());
       await db.update('tasks', {'date': todayStr});
+    }
+    // v2 -> v3: add preferences table
+    if (oldVersion < 3) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS preferences (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL
+        )
+      ''');
     }
   }
 
@@ -76,6 +85,14 @@ class DatabaseHelper {
         date TEXT NOT NULL,
         sleepDurationMinutes INTEGER NOT NULL,
         goalDurationMinutes INTEGER NOT NULL DEFAULT 450
+      )
+    ''');
+
+    // --- Preferences table ---
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS preferences (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
       )
     ''');
 
@@ -318,6 +335,56 @@ class DatabaseHelper {
       [days],
     );
     return (result.first['avg'] as num?)?.toDouble() ?? 0.0;
+  }
+
+  // ==================== Preferences CRUD ====================
+
+  Future<String?> getPreference(String key) async {
+    final db = await database;
+    final maps = await db.query('preferences',
+        where: 'key = ?', whereArgs: [key]);
+    if (maps.isEmpty) return null;
+    return maps.first['value'] as String;
+  }
+
+  Future<void> setPreference(String key, String value) async {
+    final db = await database;
+    await db.insert(
+      'preferences',
+      {'key': key, 'value': value},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<Map<String, String>> getAllPreferences() async {
+    final db = await database;
+    final maps = await db.query('preferences');
+    return {for (final m in maps) m['key'] as String: m['value'] as String};
+  }
+
+  /// Get the average focus minutes per day of week across all time.
+  /// Returns a map where keys are day-of-week numbers (1=Monday..7=Sunday)
+  /// and values are the average focus minutes for that day.
+  Future<Map<int, double>> getAverageFocusMinutesByDayOfWeek() async {
+    final db = await database;
+    // SQLite's strftime('%w', date) returns 0=Sunday..6=Saturday.
+    // We adjust to 1=Monday..7=Sunday by: ((strftime('%w', date) + 6) % 7) + 1
+    final maps = await db.rawQuery('''
+      SELECT
+        ((CAST(strftime('%w', date) AS INTEGER) + 6) % 7) + 1 AS day_of_week,
+        AVG(CAST(durationMinutes AS REAL)) AS avg_minutes
+      FROM focus_sessions
+      GROUP BY day_of_week
+      ORDER BY day_of_week ASC
+    ''');
+
+    final result = <int, double>{};
+    for (final row in maps) {
+      final dow = row['day_of_week'] as int;
+      final avg = (row['avg_minutes'] as num?)?.toDouble() ?? 0.0;
+      result[dow] = avg;
+    }
+    return result;
   }
 
   // ==================== Streak ====================

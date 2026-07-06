@@ -83,6 +83,7 @@ class AppTextStyles {
 }
 
 class AppTheme {
+  /// Build the app theme with accessible contrast.
   static ThemeData get theme {
     return ThemeData(
       scaffoldBackgroundColor: AppColors.bgMid,
@@ -91,8 +92,18 @@ class AppTheme {
         primary: AppColors.accent,
         secondary: AppColors.accentSoft,
         surface: AppColors.bgMid,
+        // Ensure sufficient contrast for accessibility
+        onPrimary: AppColors.bgMid,
+        onSecondary: AppColors.bgMid,
+        onSurface: AppColors.textPrimary,
       ),
       useMaterial3: true,
+      // Fix text contrast on primary/surface
+      textTheme: GoogleFonts.poppinsTextTheme().apply(
+        bodyColor: AppColors.textPrimary,
+        displayColor: AppColors.textPrimary,
+        decorationColor: AppColors.textPrimary,
+      ),
     );
   }
 }
