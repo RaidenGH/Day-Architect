@@ -23,15 +23,23 @@ class OnboardingScreen extends StatelessWidget {
                   height: 64,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.accent.withValues(alpha: 0.2)),
+                    border: Border.all(
+                        color: AppColors.accent.withValues(alpha: 0.2)),
                   ),
                   child: Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        CustomPaint(size: const Size(28, 24), painter: _TrianglePainter()),
+                        CustomPaint(
+                            size: const Size(28, 24),
+                            painter: _TrianglePainter()),
                         const SizedBox(height: 2),
-                        Container(width: 8, height: 8, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.textPrimary)),
+                        Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.textPrimary)),
                       ],
                     ),
                   ),
@@ -41,23 +49,31 @@ class OnboardingScreen extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   'PLAN IT · FOCUS ON IT · SLEEP ON IT',
-                  style: AppTextStyles.body(size: 12, weight: FontWeight.w500, color: AppColors.textAmberLight),
+                  style: AppTextStyles.body(
+                      size: 12,
+                      weight: FontWeight.w500,
+                      color: AppColors.textAmberLight),
                 ),
 
                 const SizedBox(height: 32),
-                Container(width: 48, height: 2, color: AppColors.accent.withValues(alpha: 0.5)),
+                Container(
+                    width: 48,
+                    height: 2,
+                    color: AppColors.accent.withValues(alpha: 0.5)),
                 const SizedBox(height: 32),
 
                 Text(
                   'Build the day you actually want to live',
                   textAlign: TextAlign.center,
-                  style: AppTextStyles.heading(size: 22, weight: FontWeight.w600),
+                  style:
+                      AppTextStyles.heading(size: 22, weight: FontWeight.w600),
                 ),
                 const SizedBox(height: 10),
                 Text(
                   "A planner built for Filipino students — schedule in seconds, block distractions, and protect your sleep.",
                   textAlign: TextAlign.center,
-                  style: AppTextStyles.body(size: 13, color: AppColors.textSecondary),
+                  style: AppTextStyles.body(
+                      size: 13, color: AppColors.textSecondary),
                 ),
 
                 const SizedBox(height: 40),
@@ -65,7 +81,7 @@ class OnboardingScreen extends StatelessWidget {
                   label: "Get Started — it's free",
                   onTap: () {
                     Navigator.of(context).pushReplacement(
-                      fadeSlideRoute(const TodayScreen()),
+                      MaterialPageRoute(builder: (_) => const TodayScreen()),
                     );
                   },
                 ),
@@ -73,7 +89,9 @@ class OnboardingScreen extends StatelessWidget {
                 GhostButton(label: 'I already have an account', onTap: () {}),
 
                 const SizedBox(height: 24),
-                Text('No credit card needed. Works offline.', style: AppTextStyles.body(size: 11, color: AppColors.textMuted)),
+                Text('No credit card needed. Works offline.',
+                    style: AppTextStyles.body(
+                        size: 11, color: AppColors.textMuted)),
               ],
             ),
           ),
