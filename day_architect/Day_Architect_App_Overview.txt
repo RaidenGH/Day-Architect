@@ -1,0 +1,351 @@
+================================================================================
+                     DAY ARCHITECT — APP OVERVIEW
+================================================================================
+
+   "Build the day you actually want to live"
+   A distraction-blocking planner built for Filipino college students.
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+  1.  What is Day Architect?
+  2.  Tech Stack
+  3.  Project Structure
+  4.  Screens (5 Screens)
+  5.  Data Models (3 Models)
+  6.  Services (2 Services)
+  7.  UI / Design System
+  8.  Reusable Widgets
+  9.  Current State (Working vs. To-Do)
+ 10.  GitHub Repository
+
+================================================================================
+1. WHAT IS DAY ARCHITECT?
+================================================================================
+
+  Day Architect is a mobile app (Flutter) that lets students plan their day,
+  block distracting social media during focus sessions, and track sleep —
+  all in one place. It is designed specifically for Filipino college students.
+
+  Core philosophy: "PLAN IT · FOCUS ON IT · SLEEP ON IT"
+
+  Key features:
+    • Daily schedule with categorized task blocks (Class, Focus, Routine, Org, Sleep)
+    • Pomodoro-style Focus Mode with a visual timer ring & app blocking display
+    • Wind-down mode with Do Not Disturb, dim social apps, and alarm settings
+    • Progress dashboard with streak calendar, focus hours chart, sleep consistency
+    • Local SQLite database for offline-first persistence
+    • Local notifications for session completions and wind-down reminders
+    • Seed data pre-loaded for immediate testing
+
+================================================================================
+2. TECH STACK
+================================================================================
+
+  ┌──────────────────────────┬────────────────────────────────────────────┐
+  │ Framework                │ Flutter (Dart)                             │
+  │ Language version         │ Dart SDK >=3.0.0 <4.0.0                   │
+  │ App name (pub)           │ day_architect                              │
+  │ Version                  │ 0.1.0                                      │
+  ├──────────────────────────┼────────────────────────────────────────────┤
+  │ Fonts                    │ Google Fonts: Lora (headings), Poppins     │
+  │                          │ (body & labels) — loaded via google_fonts  │
+  │                          │ v6.2.1 — no manual font files required     │
+  ├──────────────────────────┼────────────────────────────────────────────┤
+  │ Local Storage            │ SQLite via sqflite ^2.3.0                  │
+  │ File paths               │ path_provider ^2.1.0 / path ^1.8.0        │
+  ├──────────────────────────┼────────────────────────────────────────────┤
+  │ Notifications            │ flutter_local_notifications ^17.2.0        │
+  │ Timezone support         │ timezone ^0.9.4                            │
+  ├──────────────────────────┼────────────────────────────────────────────┤
+  │ UI Framework             │ Material 3 (useMaterial3: true)            │
+  │                          │ with custom dark color scheme              │
+  ├──────────────────────────┼────────────────────────────────────────────┤
+  │ Targets                  │ Android, iOS, Web, Windows, macOS, Linux   │
+  │                          │ (cross-platform Flutter project)           │
+  └──────────────────────────┴────────────────────────────────────────────┘
+
+================================================================================
+3. PROJECT STRUCTURE
+================================================================================
+
+  day_architect/
+  ├── lib/
+  │   ├── main.dart                       # App entry point, DB & notification init
+  │   ├── models/
+  │   │   ├── task.dart                   # Task model (schedule block)
+  │   │   ├── focus_session.dart          # Focus session model
+  │   │   └── sleep_log.dart              # Sleep log model
+  │   ├── screens/
+  │   │   ├── onboarding_screen.dart      # Welcome / "Get Started" screen
+  │   │   ├── today_screen.dart           # Today's schedule & streak
+  │   │   ├── focus_screen.dart           # Live focus timer & block list
+  │   │   ├── winddown_screen.dart        # Wind-down / bedtime prep
+  │   │   └── progress_screen.dart        # Weekly stats & insights
+  │   ├── services/
+  │   │   ├── database_helper.dart        # SQLite DB singleton (CRUD for all models)
+  │   │   └── notification_service.dart   # Local notifications singleton
+  │   ├── theme/
+  │   │   └── app_theme.dart              # Design tokens: colors, gradients, text styles
+  │   └── widgets/
+  │       ├── app_widgets.dart            # Shared UI components
+  │       └── add_edit_task_sheet.dart    # Bottom sheet form for tasks
+  ├── pubspec.yaml                        # Dependencies & metadata
+  ├── test/
+  │   └── widget_test.dart
+  ├── android/                            # Android native host
+  ├── ios/                                # iOS native host
+  ├── web/                                # Web build config
+  ├── windows/                            # Windows native host
+  ├── linux/                              # Linux native host
+  └── macos/                              # macOS native host
+
+================================================================================
+4. SCREENS
+================================================================================
+
+  4a. ONBOARDING SCREEN (onboarding_screen.dart)
+  ─────────────────────────────────────────────────────────────────────────────
+    • First screen shown when the app launches
+    • Logo mark with a custom triangle + dot icon
+    • App name "Day Architect" + tagline
+    • Heading: "Build the day you actually want to live"
+    • Description paragraph about the app's purpose
+    • "Get Started — it's free" primary button → navigates to TodayScreen
+    • "I already have an account" ghost button (placeholder)
+    • "No credit card needed. Works offline." footer text
+
+  4b. TODAY SCREEN (today_screen.dart)
+  ─────────────────────────────────────────────────────────────────────────────
+    • Greeting: "Good morning, Andrea 👋" with the current date
+    • Streak bar showing: "12-day 🔥 streak" and "4 / 6 blocks done"
+    • "TODAY'S SCHEDULE" section with 5 hardcoded TaskCards:
+        - 7:30  — Wake & stretch                [Routine] ✅
+        - 8:00  — Software Design Lecture        [Class]   ✅
+                  CpE 205 · Rm 302
+        - 10:30 — Focus Block: Thesis Prep       [Focus]
+                  30 min · Social media blocked
+        - 2:00  — Org Meeting — BITS             [Org]
+        - 8:30  — Wind-down begins               [Sleep]
+    • Floating "+" button (accent gradient) — placeholder for adding tasks
+    • Bottom navigation bar with 4 tabs: Today, Focus, Sleep, Stats
+
+  4c. FOCUS SCREEN (focus_screen.dart)
+  ─────────────────────────────────────────────────────────────────────────────
+    • "● LIVE SESSION" badge
+    • Subtitle: "Focus Mode"
+    • Active session: "Studying: Thesis Defense Prep"
+    • Timer ring: custom-painted circular progress ring at 75% with "18:24"
+    • Info pills: "47 min Focused today", "3 Sessions", "0 Interruptions"
+    • "BLOCKING RIGHT NOW" card:
+        - Instagram  🚫 Blocked (red)
+        - TikTok     🚫 Blocked (black)
+        - Facebook   🚫 Blocked (blue)
+    • "🏆 Personal best — keep going!" banner with "+5 min" badge
+    • "End session early" ghost button
+
+  4d. WIND-DOWN SCREEN (winddown_screen.dart)
+  ─────────────────────────────────────────────────────────────────────────────
+    • Moon graphic with glow effect
+    • "Bedtime in 28 min"
+    • Sleep info: "Class starts at 8:00 AM — let's protect 7h 30m of sleep"
+    • Toggle switches:
+        - Do Not Disturb (silence notifications)        [ON]
+        - Dim Social Apps (grayscale + slow response)   [ON]
+        - Alarm Set (6:30 AM — 7h 58m from now)        [OFF]
+    • "SLEEP COMPARISON" bar chart:
+        - 5h 40m — Last night        (58%)
+        - 7h 30m — Tonight's goal    (100%)  ← accent gradient
+        - 6h 15m — Avg (7 days)      (76%)
+    • "Start wind-down now" primary button
+
+  4e. PROGRESS SCREEN (progress_screen.dart)
+  ─────────────────────────────────────────────────────────────────────────────
+    • "This week · Your Progress"
+    • 3 stat mini-cards: "12 🔥 Day streak", "4h 20m Focus this week", "6h 4m Avg sleep"
+    • "STREAK CALENDAR" — 7-day row with check circles (Mon–Sun)
+    • "FOCUS HOURS" — 7-day bar chart (Thu is peak)
+    • "SLEEP CONSISTENCY" — 7-day dots (green/plum bars)
+    • "💡 Thursday is your peak day" insight card with recommendation
+    • Bottom nav for navigation between screens
+
+================================================================================
+5. DATA MODELS
+================================================================================
+
+  5a. Task (focus_session.dart)
+  ─────────────────────────────────────────────────────────────────────────────
+    • id              — int? (auto-increment PK)
+    • title           — String (name of the task)
+    • time            — String (e.g. "8:00")
+    • chipLabel       — String (category: Routine, Class, Focus, Org, Sleep)
+    • accentColor     — int (Color.value for the card accent border)
+    • chipBg          — int (Color.value for the category chip background)
+    • meta            — String? (optional notes, e.g. "CpE 205 · Rm 302")
+    • done            — bool (completion status)
+    • date            — String (ISO-8601 yyyy-MM-dd)
+    • sortOrder       — int (ordering within a day)
+
+  5b. FocusSession (focus_session.dart)
+  ─────────────────────────────────────────────────────────────────────────────
+    • id              — int? (auto-increment PK)
+    • title           — String (session name)
+    • taskId          — int? (FK to tasks.id)
+    • durationMinutes — int (minutes focused)
+    • interruptions   — int (number of interruptions, default 0)
+    • date            — String (ISO-8601 yyyy-MM-dd)
+
+  5c. SleepLog (sleep_log.dart)
+  ─────────────────────────────────────────────────────────────────────────────
+    • id                  — int? (auto-increment PK)
+    • date                — String (ISO-8601 yyyy-MM-dd)
+    • sleepDurationMinutes — int (minutes slept)
+    • goalDurationMinutes  — int (target minutes, default 450 = 7h 30m)
+    • formattedDuration   — getter (e.g. "7h 10m")
+    • fractionOfGoal      — getter (0.0–1.0+)
+
+================================================================================
+6. SERVICES
+================================================================================
+
+  6a. DatabaseHelper (database_helper.dart) — Singleton
+  ─────────────────────────────────────────────────────────────────────────────
+    • Local SQLite database stored at: day_architect.db
+    • 4 tables: tasks, focus_sessions, sleep_logs, preferences
+    • Database version: 3 (with migration support)
+    • CRUD for all models:
+        - Tasks: insert, update, delete, getTasks (by date)
+        - Focus Sessions: insert, getFocusSessions, getTotalFocusMinutes,
+          getFocusMinutesByDay, getAverageFocusMinutesByDayOfWeek
+        - Sleep Logs: insert, getSleepLogs, getSleepLog, getAverageSleepMinutes
+        - Preferences: getPreference, setPreference, getAllPreferences
+    • Special queries:
+        - getStreak() — consecutive days with completed tasks
+        - getAverageFocusMinutesByDayOfWeek() — per-day-of-week averages
+    • Seed data: 5 tasks, 3 focus sessions, 7 sleep logs pre-populated
+
+  6b. NotificationService (notification_service.dart) — Singleton
+  ─────────────────────────────────────────────────────────────────────────────
+    • Uses flutter_local_notifications
+    • 2 notification channels: focus_sessions, wind_down
+    • Methods:
+        - init() — initialize channels, request Android 13+ permission
+        - showNotification() — fire immediate notification
+        - showSessionComplete() — "🎯 Session Complete! You focused for Xh Ym"
+        - scheduleWindDown() — schedule a zoned bedtime reminder
+        - cancelWindDown() — remove scheduled wind-down notification
+
+================================================================================
+7. UI / DESIGN SYSTEM
+================================================================================
+
+  7a. Colors (app_theme.dart — AppColors)
+  ─────────────────────────────────────────────────────────────────────────────
+    Backgrounds:
+      bgDark    = #14152B (deep navy)
+      bgMid     = #1F2142 (midnight blue)
+      bgLight   = #1B1D3A (dark indigo)
+
+    Accents:
+      accent    = #E8935B (amber-orange)
+      accentSoft= #F2A488 (coral)
+      sage      = #9CAF94 (wellness green)
+      plum      = #6E6A99 (muted purple)
+
+    Text:
+      textPrimary  = #F6F1E7 (warm white)
+      textSecondary= #8A87B0 (muted lavender)
+      textMuted    = #5A5880 (dimmed purple)
+      textAmberLight = #C9A98E
+      textLavender = #C9C4E0
+
+    Surfaces:
+      cardSurface = rgba(255,255,255,0.055)
+      cardBorder  = rgba(255,255,255,0.055)
+
+    Chip backgrounds (15% opacity):
+      chipAmberBg = #33E8935B
+      chipCoralBg = #33F2A488
+      chipSageBg  = #339CAF94
+      chipPlumBg  = #336E6A99
+
+  7b. Gradients (app_theme.dart — AppGradients)
+  ─────────────────────────────────────────────────────────────────────────────
+    background    = bgLight → bgMid → #1A1B38
+    accentButton  = accent → accentSoft
+
+  7c. Typography (app_theme.dart — AppTextStyles)
+  ─────────────────────────────────────────────────────────────────────────────
+    Heading: Lora, 24px, w700 (variable size)
+    Eyebrow: Lora italic, 15px, amber-light color
+    Body:    Poppins, 13px, w400 (variable)
+    Label:   Poppins, 11px, w700, 1.0 letter-spacing, muted color
+
+  7d. Accessibility
+  ─────────────────────────────────────────────────────────────────────────────
+    • Text scaling capped between 0.8x and 1.3x to prevent layout breakage
+    • ColorScheme ensures sufficient contrast for onPrimary/onSurface
+    • Debug show banner disabled
+
+================================================================================
+8. REUSABLE WIDGETS
+================================================================================
+
+  app_widgets.dart:
+    • PrimaryButton    — Full-width gradient CTA button
+    • GhostButton      — Outlined secondary button
+    • CategoryChip     — Small rounded label chip (Routine, Class, etc.)
+    • TaskCard         — Schedule task card with time, title, chip, & checkbox
+    • AppBottomNav     — 4-tab bottom navigation bar
+
+  add_edit_task_sheet.dart:
+    • AddEditTaskSheet — Modal bottom sheet for creating/editing/deleting tasks
+      with form validation, category selector, and action buttons
+
+================================================================================
+9. CURRENT STATE (Working vs. To-Do)
+================================================================================
+
+  ✅ Working:
+    • All 5 screens built and navigable
+    • Fonts (Lora + Poppins) auto-load via google_fonts
+    • Design system matches Figma exactly
+    • Custom-painted timer ring widget (no chart library needed)
+    • SQLite database with full CRUD operations for all models
+    • Seed data (5 tasks, 3 focus sessions, 7 sleep logs)
+    • Notification service with channels & scheduling
+    • Database migrations (v1→v2→v3)
+    • Streak calculation (consecutive days with completed tasks)
+    • Weekly focus minutes by day-of-week averages
+    • Modal bottom sheet for adding/editing tasks
+
+  ❌ Not Yet Functional / Placeholder UI:
+    • Tasks are hardcoded in the Today screen (not reading from DB yet)
+    • Focus timer does not actually count down (needs Timer/Ticker)
+    • App blocking is UI-only (requires native plugin for Android)
+    • "+" FAB on Today screen not yet connected to AddEditTaskSheet
+    • Onboarding "I already have an account" button is a no-op
+    • No user accounts / authentication
+    • Wind-down timer & alarm not wired to actual device settings
+    • Progress screen uses hardcoded static data (needs DB integration)
+    • Focus screen stats are static (not reading from DB)
+
+  🎯 Suggested Build Order:
+    1. Wire Today screen to read tasks from SQLite DB
+    2. Connect "+" FAB to AddEditTaskSheet and persist to DB
+    3. Make Focus Mode timer count down with a Timer or Ticker
+    4. Schedule actual wind-down notifications
+    5. Wire Progress screen to DB queries
+    6. App blocking (last — most complex OS-specific feature)
+    7. User accounts & auth
+
+================================================================================
+10. GITHUB REPOSITORY
+================================================================================
+
+  Repository: https://github.com/lawrence-studio/Day-Architect.git
+  Branch: main
+
+================================================================================
+                    End of Day Architect App Overview
+================================================================================

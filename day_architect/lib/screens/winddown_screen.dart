@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/winddown_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_widgets.dart';
+import '../widgets/page_transitions.dart';
 import 'today_screen.dart';
 import 'focus_screen.dart';
 import 'progress_screen.dart';
@@ -14,26 +17,41 @@ class WindDownScreen extends StatefulWidget {
 
 class _WindDownScreenState extends State<WindDownScreen> {
   final int _navIndex = 2;
-  bool _dnd = true;
-  bool _dimApps = true;
-  bool _alarm = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<WindDownProvider>().loadData();
+    });
+  }
 
   void _onNavTap(int index) {
     if (index == _navIndex) return;
     switch (index) {
       case 0:
-        Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (_) => const TodayScreen()));
+        pushReplacementPage(context, const TodayScreen());
         break;
       case 1:
-        Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (_) => const FocusScreen()));
+        pushReplacementPage(context, const FocusScreen());
         break;
       case 3:
-        Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (_) => const ProgressScreen()));
+        pushReplacementPage(context, const ProgressScreen());
         break;
     }
+  }
+
+  Future<void> _startWindDown(WindDownProvider provider) async {
+    final now = DateTime.now();
+    await provider.startWindDown(bedtime: now);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('🌙 Wind-down started! Sleep well.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -51,91 +69,200 @@ class _WindDownScreenState extends State<WindDownScreen> {
           child: Column(
             children: [
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Wind Down', style: AppTextStyles.eyebrow()),
-                      const SizedBox(height: 16),
-
-                      // Moon
-                      Center(
-                        child: Container(
-                          width: 130,
-                          height: 130,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: const RadialGradient(
-                              center: Alignment(-0.3, -0.3),
-                              colors: [Color(0xFF4A4585), Color(0xFF24225A)],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                  color: const Color(0xFF958CDB)
-                                      .withValues(alpha: 0.28),
-                                  blurRadius: 60,
-                                  spreadRadius: 6),
-                            ],
-                          ),
+                child: Consumer<WindDownProvider>(
+                  builder: (context, provider, _) {
+                    if (provider.loading) {
+                      return Center(
+                        child: Semantics(
+                          label: 'Loading',
+                          child: const CircularProgressIndicator(),
                         ),
-                      ),
-                      const SizedBox(height: 20),
+                      );
+                    }
 
-                      Text('Bedtime in 28 min',
-                          textAlign: TextAlign.center,
-                          style: AppTextStyles.heading(size: 28)),
-                      const SizedBox(height: 8),
-                      RichText(
-                        textAlign: TextAlign.center,
-                        text: TextSpan(
-                          style: AppTextStyles.body(
-                              size: 12.5, color: AppColors.textSecondary),
-                          children: [
-                            const TextSpan(
-                                text:
-                                    "Class starts at 8:00 AM — let's protect\n"),
-                            TextSpan(
-                                text: '7h 30m',
-                                style: AppTextStyles.body(
-                                    size: 12.5,
-                                    weight: FontWeight.w600,
-                                    color: AppColors.accent)),
-                            const TextSpan(text: ' of sleep tonight'),
-                          ],
-                        ),
-                      ),
+                    final goalMinutes = provider.targetSleepMinutes;
+                    final lastNightMinutes = provider.lastNightMinutes;
+                    final avgMinutes = provider.avgSleepMinutes.round();
+                    final lastNightFrac =
+                        goalMinutes > 0 ? lastNightMinutes / goalMinutes : 0.0;
+                    final avgFrac =
+                        goalMinutes > 0 ? avgMinutes / goalMinutes : 0.0;
 
-                      const SizedBox(height: 22),
-
-                      _toggleRow('Do Not Disturb', 'Silence all notifications',
-                          _dnd, (v) => setState(() => _dnd = v)),
-                      _toggleRow('Dim Social Apps', 'Grayscale + slow response',
-                          _dimApps, (v) => setState(() => _dimApps = v)),
-                      _toggleRow('Alarm Set', '6:30 AM — 7h 58m from now',
-                          _alarm, (v) => setState(() => _alarm = v)),
-
-                      const SizedBox(height: 12),
-                      Text('SLEEP COMPARISON', style: AppTextStyles.label()),
-                      const SizedBox(height: 12),
-
-                      Row(
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _sleepBar(
-                              '5h 40m', 'Last night', 0.58, AppColors.plum),
-                          const SizedBox(width: 14),
-                          _sleepBar("7h 30m", "Tonight's goal", 1.0, null,
-                              isGoal: true),
-                          const SizedBox(width: 14),
-                          _sleepBar('6h 15m', 'Avg (7 days)', 0.76,
-                              AppColors.textMuted),
+                          Text('Wind Down', style: AppTextStyles.eyebrow()),
+                          const SizedBox(height: 16),
+
+                          // Moon
+                          Center(
+                            child: Container(
+                              width: 130,
+                              height: 130,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: const RadialGradient(
+                                  center: Alignment(-0.3, -0.3),
+                                  colors: [
+                                    Color(0xFF4A4585),
+                                    Color(0xFF24225A)
+                                  ],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                      color: const Color(0xFF958CDB)
+                                          .withValues(alpha: 0.28),
+                                      blurRadius: 60,
+                                      spreadRadius: 6),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Bedtime countdown
+                          Text(
+                            provider.bedtimeCountdownText,
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.heading(size: 28),
+                          ),
+                          const SizedBox(height: 8),
+                          RichText(
+                            textAlign: TextAlign.center,
+                            text: TextSpan(
+                              style: AppTextStyles.body(
+                                  size: 12.5,
+                                  color: AppColors.textSecondary),
+                              children: [
+                                if (provider.earliestClassLabel.isNotEmpty &&
+                                    provider.earliestClassLabel !=
+                                        'No class tomorrow') ...[
+                                  TextSpan(
+                                    text:
+                                        '${provider.earliestClassLabel} at ',
+                                  ),
+                                  TextSpan(
+                                    text: provider.earliestClassTime,
+                                    style: AppTextStyles.body(
+                                        size: 12.5,
+                                        weight: FontWeight.w600,
+                                        color: AppColors.accent),
+                                  ),
+                                  const TextSpan(text: ' tomorrow'),
+                                ] else ...[
+                                  const TextSpan(text: "Let's protect\n"),
+                                  TextSpan(
+                                    text:
+                                        provider.formatMinutes(goalMinutes),
+                                    style: AppTextStyles.body(
+                                        size: 12.5,
+                                        weight: FontWeight.w600,
+                                        color: AppColors.accent),
+                                  ),
+                                  const TextSpan(text: ' of sleep tonight'),
+                                ],
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 22),
+
+                          // Toggle rows
+                          _toggleRow(
+                              'Do Not Disturb',
+                              'Silence all notifications',
+                              provider.dnd,
+                              (v) => provider.setDnd(v)),
+                          _toggleRow('Dim Social Apps',
+                              'Grayscale + slow response',
+                              provider.dimApps,
+                              (v) => provider.setDimApps(v)),
+                          _toggleRow('Alarm Set',
+                              provider.earliestClassTime.isNotEmpty
+                                  ? '${provider.formatMinutes(goalMinutes)} from bedtime'
+                                  : '6:30 AM — wake-up ready',
+                              provider.alarm,
+                              (v) => provider.setAlarm(v)),
+
+                          // Empty state when no sleep data exists
+                          if (provider.lastNight == null &&
+                              provider.avgSleepMinutes == 0) ...[
+                            const SizedBox(height: 10),
+                            Center(
+                              child: Semantics(
+                                label: 'No sleep data yet',
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 56,
+                                      height: 56,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: AppColors.plum
+                                            .withValues(alpha: 0.2),
+                                      ),
+                                      child: Icon(
+                                          Icons.bedtime_outlined,
+                                          size: 28,
+                                          color: AppColors.textMuted
+                                              .withValues(alpha: 0.5)),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text('No sleep data yet',
+                                        style: AppTextStyles.body(
+                                            size: 13,
+                                            weight: FontWeight.w600,
+                                            color: AppColors.textMuted)),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                        'Start wind-down tonight to begin tracking',
+                                        style: AppTextStyles.body(
+                                            size: 11,
+                                            color: AppColors.textMuted)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ] else ...[
+                            const SizedBox(height: 12),
+                            Text('SLEEP COMPARISON',
+                                style: AppTextStyles.label()),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                _sleepBar(
+                                    provider.formatMinutes(lastNightMinutes),
+                                    'Last night',
+                                    lastNightFrac.clamp(0.0, 1.0),
+                                    AppColors.plum),
+                                const SizedBox(width: 14),
+                                _sleepBar(
+                                    provider.formatMinutes(goalMinutes),
+                                    "Tonight's goal",
+                                    1.0,
+                                    null,
+                                    isGoal: true),
+                                const SizedBox(width: 14),
+                                _sleepBar(
+                                    provider.formatMinutes(avgMinutes),
+                                    'Avg (7 days)',
+                                    avgFrac.clamp(0.0, 1.0),
+                                    AppColors.textMuted),
+                              ],
+                            ),
+                          ],
+
+                          const SizedBox(height: 24),
+                          PrimaryButton(
+                              label: 'Start wind-down now',
+                              onTap: () => _startWindDown(provider)),
                         ],
                       ),
-
-                      const SizedBox(height: 24),
-                      PrimaryButton(label: 'Start wind-down now', onTap: () {}),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
               AppBottomNav(activeIndex: _navIndex, onTap: _onNavTap),

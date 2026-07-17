@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_widgets.dart';
+import '../widgets/page_transitions.dart';
 import 'today_screen.dart';
 
 class OnboardingScreen extends StatelessWidget {
@@ -80,9 +81,7 @@ class OnboardingScreen extends StatelessWidget {
                 PrimaryButton(
                   label: "Get Started — it's free",
                   onTap: () {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (_) => const TodayScreen()),
-                    );
+                    pushReplacementPage(context, const TodayScreen());
                   },
                 ),
                 const SizedBox(height: 14),

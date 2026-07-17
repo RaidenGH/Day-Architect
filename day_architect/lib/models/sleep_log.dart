@@ -2,22 +2,34 @@
 class SleepLog {
   final int? id;
   final String date; // ISO-8601 date string (yyyy-MM-dd)
-  final int sleepDurationMinutes;
-  final int goalDurationMinutes;
+  final int actualDuration;    // Renamed from 'sleepDurationMinutes'
+  final int targetDuration;    // Renamed from 'goalDurationMinutes'
+  final DateTime? bedtime;     // New: bedtime timestamp
+  final DateTime? wakeTime;    // New: wake time timestamp
 
   SleepLog({
     this.id,
     required this.date,
-    required this.sleepDurationMinutes,
-    this.goalDurationMinutes = 450, // 7h 30m default
+    this.actualDuration = 0,
+    this.targetDuration = 450, // 7h 30m default
+    this.bedtime,
+    this.wakeTime,
   });
 
+  // Backwards-compat aliases
+  int get sleepDurationMinutes => actualDuration;
+  int get goalDurationMinutes => targetDuration;
+
   factory SleepLog.fromMap(Map<String, dynamic> map) {
+    final btStr = map['bedtime'] as String?;
+    final wtStr = map['wakeTime'] as String?;
     return SleepLog(
       id: map['id'] as int?,
       date: map['date'] as String,
-      sleepDurationMinutes: map['sleepDurationMinutes'] as int,
-      goalDurationMinutes: map['goalDurationMinutes'] as int? ?? 450,
+      actualDuration: map['actualDuration'] as int? ?? (map['sleepDurationMinutes'] as int? ?? 0),
+      targetDuration: map['targetDuration'] as int? ?? (map['goalDurationMinutes'] as int? ?? 450),
+      bedtime: btStr != null ? DateTime.tryParse(btStr) : null,
+      wakeTime: wtStr != null ? DateTime.tryParse(wtStr) : null,
     );
   }
 
@@ -25,29 +37,37 @@ class SleepLog {
     return {
       if (id != null) 'id': id,
       'date': date,
-      'sleepDurationMinutes': sleepDurationMinutes,
-      'goalDurationMinutes': goalDurationMinutes,
+      'actualDuration': actualDuration,
+      'targetDuration': targetDuration,
+      'sleepDurationMinutes': actualDuration,
+      'goalDurationMinutes': targetDuration,
+      'bedtime': bedtime?.toIso8601String(),
+      'wakeTime': wakeTime?.toIso8601String(),
     };
   }
 
   SleepLog copyWith({
     int? id,
     String? date,
-    int? sleepDurationMinutes,
-    int? goalDurationMinutes,
+    int? actualDuration,
+    int? targetDuration,
+    DateTime? bedtime,
+    DateTime? wakeTime,
   }) {
     return SleepLog(
       id: id ?? this.id,
       date: date ?? this.date,
-      sleepDurationMinutes: sleepDurationMinutes ?? this.sleepDurationMinutes,
-      goalDurationMinutes: goalDurationMinutes ?? this.goalDurationMinutes,
+      actualDuration: actualDuration ?? this.actualDuration,
+      targetDuration: targetDuration ?? this.targetDuration,
+      bedtime: bedtime ?? this.bedtime,
+      wakeTime: wakeTime ?? this.wakeTime,
     );
   }
 
   /// Format minutes as "Xh Ym" string
   String get formattedDuration {
-    final hours = sleepDurationMinutes ~/ 60;
-    final minutes = sleepDurationMinutes % 60;
+    final hours = actualDuration ~/ 60;
+    final minutes = actualDuration % 60;
     if (hours > 0 && minutes > 0) return '${hours}h ${minutes}m';
     if (hours > 0) return '${hours}h';
     if (minutes > 0) return '${minutes}m';
@@ -55,7 +75,7 @@ class SleepLog {
   }
 
   /// Fraction of goal achieved (0.0–1.0+)
-  double get fractionOfGoal => sleepDurationMinutes / goalDurationMinutes;
+  double get fractionOfGoal => targetDuration > 0 ? actualDuration / targetDuration : 0.0;
 
   @override
   String toString() => 'SleepLog(id: $id, date: $date, sleep: $formattedDuration)';
